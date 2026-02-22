@@ -29,3 +29,11 @@ spec = do
 
     it "shows 1*(-1)" $ do
       prettyShow (1 * (-1)) `shouldBe` "1*(-1)"
+
+  describe "simplify" $ do
+    it "simplifies 0+x" $ do
+      (prettyShow . simplify $ 0 + 5) `shouldBe` "5"
+
+  describe "Symbol" $ do
+    it "shows symbol" $ do
+      prettyShow (1 + (Symbol "x") * 3) `shouldBe` "1+(x*3)"
