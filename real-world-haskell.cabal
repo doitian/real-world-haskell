@@ -19,6 +19,7 @@ library
   hs-source-dirs:      src
   exposed-modules:     Text.PrettyShow
                      , Text.Parsec.Form
+                     , Text.Parsec.JSON
   build-depends:       base >= 4.7 && < 5
                      , dlist
                      , parsec
@@ -58,6 +59,7 @@ test-suite real-world-haskell-test
   main-is:             Spec.hs
   other-modules:       Text.PrettyShowSpec
                      , Text.Parsec.FormSpec
+                     , Text.Parsec.JSONSpec
   build-depends:       base
                      , real-world-haskell
                      , hspec
