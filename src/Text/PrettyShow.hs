@@ -1,48 +1,60 @@
-module Text.PrettyShow (PrettyExpr (Symbol), prettyShow, simplify) where
+module Text.PrettyShow (SymbolicExpr (Symbol), prettyShow, prettyShowI, prettyShowDL, simplify) where
 
-data PrettyExpr
-  = PrettyFromInteger Integer
+import Data.DList (DList)
+import qualified Data.DList as DList
+
+data BinaryOp = Plus | Minus | Mul deriving (Eq, Show)
+
+data UnaryOp = Abs | Negate | Signum deriving (Eq, Show)
+
+data SymbolicExpr a
+  = Number a
   | Symbol String
-  | PrettyAddition PrettyExpr PrettyExpr
-  | PrettySubtraction PrettyExpr PrettyExpr
-  | PrettyMultiply PrettyExpr PrettyExpr
-  | PrettyAbs PrettyExpr
-  | PrettyNegate PrettyExpr
-  | PrettySignum PrettyExpr
+  | BinaryArith BinaryOp (SymbolicExpr a) (SymbolicExpr a)
+  | UnaryArith UnaryOp (SymbolicExpr a)
 
-instance Num PrettyExpr where
-  fromInteger = PrettyFromInteger
-  (+) = PrettyAddition
-  (-) = PrettySubtraction
-  (*) = PrettyMultiply
-  abs = PrettyAbs
-  negate = PrettyNegate
-  signum = PrettySignum
+instance (Num a) => Num (SymbolicExpr a) where
+  fromInteger = Number . fromInteger
+  (+) = BinaryArith Plus
+  (-) = BinaryArith Minus
+  (*) = BinaryArith Mul
+  abs = UnaryArith Abs
+  negate = UnaryArith Negate
+  signum = UnaryArith Signum
+
+prettyShowDLBinaryOp :: BinaryOp -> DList Char
+prettyShowDLBinaryOp Plus = DList.singleton '+'
+prettyShowDLBinaryOp Minus = DList.singleton '-'
+prettyShowDLBinaryOp Mul = DList.singleton '*'
+
+prettyShowDLUnaryOp :: UnaryOp -> DList Char
+prettyShowDLUnaryOp Abs = DList.fromList "abs "
+prettyShowDLUnaryOp Negate = DList.singleton '-'
+prettyShowDLUnaryOp Signum = DList.fromList "signum "
 
 -- | Show an expression with parentheses around it except integer literals.
-prettyShowInParens :: PrettyExpr -> String
-prettyShowInParens (PrettyFromInteger x) = show x
-prettyShowInParens (Symbol x) = x
-prettyShowInParens x = "(" ++ prettyShow x ++ ")"
+prettyShowDLNestedExpr :: (Show a) => SymbolicExpr a -> DList Char
+prettyShowDLNestedExpr x@(Number _) = prettyShowDL x
+prettyShowDLNestedExpr x@(Symbol _) = prettyShowDL x
+prettyShowDLNestedExpr x = mconcat [DList.singleton '(', prettyShowDL x, DList.singleton ')']
 
-prettyShow :: PrettyExpr -> String
-prettyShow (PrettyFromInteger x) = show x
-prettyShow (Symbol x) = x
-prettyShow (PrettyAddition x y) = prettyShowInParens x ++ "+" ++ prettyShowInParens y
-prettyShow (PrettySubtraction x y) = prettyShowInParens x ++ "-" ++ prettyShowInParens y
-prettyShow (PrettyMultiply x y) = prettyShowInParens x ++ "*" ++ prettyShowInParens y
-prettyShow (PrettyAbs x) = "abs " ++ prettyShowInParens x
-prettyShow (PrettyNegate x) = "-" ++ prettyShowInParens x
-prettyShow (PrettySignum x) = "signum " ++ prettyShowInParens x
+prettyShowDL :: (Show a) => SymbolicExpr a -> DList Char
+prettyShowDL (Number x) = DList.fromList $ show x
+prettyShowDL (Symbol x) = DList.fromList x
+prettyShowDL (BinaryArith op x y) = mconcat [prettyShowDLNestedExpr x, prettyShowDLBinaryOp op, prettyShowDLNestedExpr y]
+prettyShowDL (UnaryArith op x) = mconcat [prettyShowDLUnaryOp op, prettyShowDLNestedExpr x]
 
-simplify :: PrettyExpr -> PrettyExpr
-simplify (PrettyAddition (PrettyFromInteger 0) x) = x
-simplify (PrettyAddition x (PrettyFromInteger 0)) = x
-simplify (PrettySubtraction x (PrettyFromInteger 0)) = x
-simplify (PrettySubtraction (PrettyFromInteger 0) x) = PrettyNegate x
-simplify (PrettyMultiply (PrettyFromInteger 1) x) = x
-simplify (PrettyMultiply x (PrettyFromInteger 1)) = x
-simplify (PrettyAbs x@(PrettyAbs _)) = x
-simplify (PrettyAbs (PrettyNegate x)) = (PrettyAbs x)
-simplify (PrettyNegate (PrettyNegate x)) = x
+prettyShow :: (Show a) => SymbolicExpr a -> String
+prettyShow = DList.toList . prettyShowDL
+
+prettyShowI :: SymbolicExpr Integer -> String
+prettyShowI = prettyShow
+
+simplify :: (Num a, Eq a) => SymbolicExpr a -> SymbolicExpr a
+simplify (BinaryArith Plus (Number n) x) | n == fromInteger 0 = x
+simplify (BinaryArith Plus x (Number n)) | n == fromInteger 0 = x
+simplify (BinaryArith Minus x (Number n)) | n == fromInteger 0 = x
+simplify (BinaryArith Minus (Number n) x) | n == fromInteger 0 = UnaryArith Negate x
+simplify (BinaryArith Mul (Number n) x) | n == fromInteger 1 = x
+simplify (BinaryArith Mul x (Number n)) | n == fromInteger 1 = x
 simplify expr = expr
