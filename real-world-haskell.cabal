@@ -18,8 +18,10 @@ extra-source-files:  README.md
 library
   hs-source-dirs:      src
   exposed-modules:     Text.PrettyShow
+                     , Text.Parsec.Form
   build-depends:       base >= 4.7 && < 5
                      , dlist
+                     , parsec
   default-language:    Haskell2010
   ghc-options:         -Wall
                        -Wcompat
@@ -55,10 +57,12 @@ test-suite real-world-haskell-test
   hs-source-dirs:      test
   main-is:             Spec.hs
   other-modules:       Text.PrettyShowSpec
+                     , Text.Parsec.FormSpec
   build-depends:       base
                      , real-world-haskell
                      , hspec
                      , QuickCheck
+                     , parsec
   default-language:    Haskell2010
   ghc-options:         -Wall
                        -Wcompat
