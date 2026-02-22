@@ -51,10 +51,14 @@ prettyShowI :: SymbolicExpr Integer -> String
 prettyShowI = prettyShow
 
 simplify :: (Num a, Eq a) => SymbolicExpr a -> SymbolicExpr a
-simplify (BinaryArith Plus (Number n) x) | n == fromInteger 0 = x
-simplify (BinaryArith Plus x (Number n)) | n == fromInteger 0 = x
-simplify (BinaryArith Minus x (Number n)) | n == fromInteger 0 = x
-simplify (BinaryArith Minus (Number n) x) | n == fromInteger 0 = UnaryArith Negate x
-simplify (BinaryArith Mul (Number n) x) | n == fromInteger 1 = x
-simplify (BinaryArith Mul x (Number n)) | n == fromInteger 1 = x
+simplify (BinaryArith op ix iy) = case (op, sx, sy) of
+  (Mul, Number 1, y) -> y
+  (Mul, x, Number 1) -> x
+  (Plus, Number 0, y) -> y
+  (Plus, x, Number 0) -> x
+  _ -> (BinaryArith op sx sy)
+  where
+    sx = simplify ix
+    sy = simplify iy
+simplify (UnaryArith op ix) = UnaryArith op (simplify ix)
 simplify expr = expr

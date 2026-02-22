@@ -1,0 +1,10 @@
+[files]
+extend-exclude = []
+
+[default]
+extend-ignore-re = []
+
+[default.extend-identifiers]
+
+[default.extend-words]
+iy = "iy"
